@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import errno
 import getpass
@@ -8,6 +10,8 @@ import sys
 import unicodedata
 from datetime import datetime as dt
 from functools import reduce
+
+from collections.abc import Collection
 
 import psutil
 from paramiko import SSHException
@@ -22,6 +26,7 @@ from vorta.borg._compatibility import BorgCompatibility
 from vorta.i18n import trans_late
 from vorta.log import logger
 from vorta.network_status.abc import NetworkStatusMonitor
+
 
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)  # enable highdpi scaling
 QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)  # use highdpi icons
@@ -115,14 +120,28 @@ class FilePathInfoAsync(QThread):
         self.signal.emit(self.path, str(self.size), str(self.files_count))
 
 
-def get_directory_size(dir_path, exclude_patterns_re):
+def get_directory_size(
+    dir_path,
+    exclude_patterns_re,
+    exclude_if_present_file_names: Collection[str] = frozenset(),
+) -> tuple[int, int]:
     ''' Get number of files only and total size in bytes from a path.
         Based off https://stackoverflow.com/a/17936789 '''
     data_size_filtered = 0
     seen = set()
     seen_filtered = set()
 
-    for curr_path, _, file_names in os.walk(dir_path):
+    for curr_path, _, file_names_list in os.walk(dir_path):
+        # I'm not sure how to exactly emulate borg here...
+        # Does Borg offer access to its internals in a way that we could use it
+        # to perform these actions (and others, like the building of cmd lines itself)?
+        # Could we refactor this to use the Python pathlib?
+
+        file_names = frozenset(file_names_list)
+
+        if any((exclude_if_present in file_names for exclude_if_present in exclude_if_present_file_names)):
+            continue
+
         for file_name in file_names:
             file_path = os.path.join(curr_path, file_name)
 

@@ -145,10 +145,15 @@ class BorgCreateJob(BorgJob):
                     exclude_dirs.append(expanded_directory)
 
             if exclude_dirs:
+                # TODO: "pattern_file" here is misleading because it is passed to borg create with --exclude-from,
+                # TODO, cont.: NOT --pattern-from. Exclude defaults to fnmatch format, whereas --pattern defaults
+                # TODO, cont.: to SH-style.
+                # See https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-help-patterns
                 pattern_file = tempfile.NamedTemporaryFile('w', delete=False)
                 pattern_file.write('\n'.join(exclude_dirs))
                 pattern_file.flush()
                 cmd.extend(['--exclude-from', pattern_file.name])
+                print(f"{pattern_file.name = }, {exclude_dirs = }")
 
         if profile.exclude_if_present is not None:
             for f in profile.exclude_if_present.split('\n'):

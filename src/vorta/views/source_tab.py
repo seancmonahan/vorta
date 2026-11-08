@@ -91,6 +91,7 @@ class SourceTab(SourceBase, SourceUI, BackupProfileMixin):
             db_item.dir_files_count = files_count
             db_item.save()
         # Remove thread from list when it's done
+        # TODO: I'm not sure whether list.remove() is safe to use while iterating over a list -Sean
         for thrd in self.updateThreads:
             if thrd.objectName() == path:
                 self.updateThreads.remove(thrd)
